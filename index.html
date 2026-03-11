@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DID Lab — Veramo CLI &amp; Universal Resolver</title>
+  <style>
+    :root {
+      --bg:       #0c0e14;
+      --surface:  #111318;
+      --card:     #161921;
+      --border:   #252830;
+      --border2:  #1e2128;
+      --accent:   #4f8ef7;
+      --accent2:  #2dd4a0;
+      --text:     #d4d8e8;
+      --muted:    #5c6480;
+      --muted2:   #3a3f54;
+      --green:    #2dd4a0;
+      --yellow:   #e6b450;
+      --red:      #e05c5c;
+      --tag-bg:   #1a1e2a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ─── Header ─── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    header .wordmark {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+    header .wordmark span { color: var(--accent); }
+    header .divider {
+      width: 1px; height: 20px;
+      background: var(--border);
+    }
+    header .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    header .pill {
+      margin-left: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* ─── Tabs ─── */
+    .tab-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      padding: 0 32px;
+      gap: 0;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 12px 18px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ─── Layout ─── */
+    .page { padding: 28px 32px; max-width: 1120px; margin: 0 auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Grid ─── */
+    .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 760px) { .cols-2 { grid-template-columns: 1fr; } }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border2);
+    }
+
+    /* ─── Code blocks ─── */
+    .code-wrap {
+      background: #090b10;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: #0d0f16;
+      border-bottom: 1px solid var(--border);
+    }
+    .code-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--muted2);
+      color: var(--muted);
+      border-radius: 3px;
+      padding: 2px 9px;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .copy-btn.done { border-color: var(--green); color: var(--green); }
+    .code-body {
+      padding: 12px 14px;
+      font-family: 'SFMono-Regular', 'Consolas', 'Menlo', monospace;
+      font-size: 12.5px;
+      line-height: 1.75;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .p  { color: var(--accent2); }  /* prompt */
+    .kw { color: #7eb8f7; }         /* keyword */
+    .fl { color: var(--yellow); }   /* flag */
+    .vl { color: #a8d8b0; }         /* value */
+    .cm { color: var(--muted); font-style: italic; } /* comment */
+
+    /* JSON colours */
+    .jk { color: #7eb8f7; }   /* key */
+    .js { color: #8fcf9d; }   /* string */
+    .jn { color: #e6b450; }   /* number */
+    .jb { color: #c084fc; }   /* bool */
+    .jx { color: var(--muted); } /* null */
+
+    /* ─── Steps ─── */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; gap: 16px; padding-bottom: 22px; position: relative; }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 14px; top: 32px;
+      width: 1px; height: calc(100% - 32px);
+      background: var(--border);
+    }
+    .step-n {
+      width: 28px; height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+      background: var(--card);
+    }
+    .step-body { flex: 1; padding-top: 4px; }
+    .step-title { font-weight: 600; font-size: 13px; margin-bottom: 5px; color: var(--text); }
+    .step-desc { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+
+    /* ─── Info callouts ─── */
+    .note {
+      border-radius: 4px;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .note-blue  { background: rgba(79,142,247,0.07); border-left: 3px solid var(--accent); color: #93bffa; }
+    .note-green { background: rgba(45,212,160,0.07); border-left: 3px solid var(--accent2); color: #6ddfc0; }
+    .note-yellow{ background: rgba(230,180,80,0.07); border-left: 3px solid var(--yellow); color: #d4a74a; }
+    .note-red   { background: rgba(224,92,92,0.07);  border-left: 3px solid var(--red);    color: #e07070; }
+
+    /* ─── Resolver ─── */
+    .resolver-row {
+      display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .did-input {
+      flex: 1; min-width: 260px;
+      background: #090b10;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 9px 13px;
+      color: var(--text);
+      font-family: 'SFMono-Regular', 'Consolas', monospace;
+      font-size: 12.5px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .did-input:focus { border-color: var(--accent); }
+    .btn-primary {
+      background: var(--accent);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 9px 20px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      font-family: inherit;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-ghost {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 9px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Sample DID pills */
+    .sample-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .sample-chip {
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 4px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: border-color 0.15s, color 0.15s;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sample-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Status */
+    .status-line {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .status-ok  { background: rgba(45,212,160,0.08); color: var(--green); border: 1px solid rgba(45,212,160,0.2); }
+    .status-err { background: rgba(224,92,92,0.08);  color: var(--red);   border: 1px solid rgba(224,92,92,0.2); }
+    .status-loading { background: rgba(79,142,247,0.08); color: var(--accent); border: 1px solid rgba(79,142,247,0.2); }
+
+    /* Result pre */
+    #resolve-result {
+      display: none;
+      background: #090b10;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 14px;
+      font-family: 'SFMono-Regular', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    /* Breakdown grid */
+    #did-breakdown { display: none; margin-top: 16px; }
+    #did-breakdown h4 {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin-bottom: 12px;
+    }
+    .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .bcard {
+      background: #090b10;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+    .bcard-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .bcard-val { font-family: monospace; font-size: 11px; color: var(--accent2); word-break: break-all; }
+    .bcard-list { list-style: none; }
+    .bcard-list li { font-family: monospace; font-size: 11px; color: var(--text); padding: 3px 0; border-bottom: 1px solid var(--border2); word-break: break-all; }
+    .bcard-list li:last-child { border-bottom: none; }
+    .bcard-list li b { color: var(--accent); display: block; }
+
+    /* Method table */
+    .method-table { width: 100%; border-collapse: collapse; }
+    .method-table th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 12px; border-bottom: 1px solid var(--border); }
+    .method-table td { padding: 9px 12px; font-size: 12.5px; border-bottom: 1px solid var(--border2); vertical-align: top; }
+    .method-table tr:last-child td { border-bottom: none; }
+    .method-table code { font-family: monospace; color: var(--accent); background: var(--tag-bg); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+    /* Spinner */
+    .spin {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid rgba(79,142,247,0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Inline emphasis */
+    strong { color: var(--text); font-weight: 600; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    p { margin-bottom: 10px; color: var(--muted); font-size: 13px; }
+    ul, ol { color: var(--muted); font-size: 13px; padding-left: 20px; }
+    li { margin-bottom: 4px; line-height: 1.6; }
+    .mono { font-family: monospace; font-size: 12px; color: var(--accent2); background: var(--tag-bg); padding: 1px 6px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="wordmark">DID<span>Lab</span></div>
+  <div class="divider"></div>
+  <div class="subtitle">Veramo CLI + Universal Resolver</div>
+  <div class="pill">localhost:3332</div>
+</header>
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('intro', this)">Introduction</button>
+  <button class="tab-btn" onclick="switchTab('setup', this)">Setup</button>
+  <button class="tab-btn" onclick="switchTab('create', this)">Create DID</button>
+  <button class="tab-btn" onclick="switchTab('resolve', this)">Resolve DID</button>
+  <button class="tab-btn" onclick="switchTab('credential', this)">Verifiable Credentials</button>
+  <button class="tab-btn" onclick="switchTab('ref', this)">Reference</button>
+</div>
+
+<div class="page">
+
+  <!-- ══════════════ INTRO ══════════════ -->
+  <div class="tab-panel active" id="tab-intro">
+
+    <div class="note note-blue" style="margin-bottom:20px">
+      Follow the tabs above in order. Commands have a copy button — paste them directly into your terminal.
+    </div>
+
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-title">What is a DID?</div>
+        <p>A <strong>Decentralised Identifier (DID)</strong> is a globally unique identifier that does not require a centralised registration authority. The controller proves ownership using a private key.</p>
+        <p>All DIDs follow this structure:</p>
+        <div class="code-wrap">
+          <div class="code-body" style="font-size:12px">did:<span class="kw">&lt;method&gt;</span>:<span class="vl">&lt;method-specific-id&gt;</span>
+
+<span class="cm">-- Examples --</span>
+did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY
+did:ethr:sepolia:0x03fdd57adec3d438ea237fe46b33ee1e016eda6b
+did:web:example.com</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">DID Document Structure</div>
+        <div class="code-wrap">
+          <div class="code-body" style="font-size:11.5px">{
+  <span class="jk">"@context"</span>: [<span class="js">"https://www.w3.org/ns/did/v1"</span>],
+  <span class="jk">"id"</span>: <span class="js">"did:key:z6Mk..."</span>,
+  <span class="jk">"verificationMethod"</span>: [{
+    <span class="jk">"id"</span>: <span class="js">"did:key:z6Mk...#z6Mk..."</span>,
+    <span class="jk">"type"</span>: <span class="js">"Ed25519VerificationKey2020"</span>,
+    <span class="jk">"controller"</span>: <span class="js">"did:key:z6Mk..."</span>,
+    <span class="jk">"publicKeyMultibase"</span>: <span class="js">"z6Mk..."</span>
+  }],
+  <span class="jk">"authentication"</span>: [<span class="js">"did:key:z6Mk...#z6Mk..."</span>]
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">DID Methods</div>
+      <table class="method-table">
+        <tr>
+          <th>Method</th>
+          <th>Description</th>
+          <th>Requires Blockchain</th>
+        </tr>
+        <tr>
+          <td><code>did:key</code></td>
+          <td>Key material encoded directly in the DID. Self-contained, no network lookup needed.</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td><code>did:ethr</code></td>
+          <td>Ethereum-based. Supports key rotation and attribute updates on-chain.</td>
+          <td>Yes — Ethereum</td>
+        </tr>
+        <tr>
+          <td><code>did:web</code></td>
+          <td>DID Document served at a well-known HTTPS path on your domain.</td>
+          <td>No — DNS / HTTPS</td>
+        </tr>
+        <tr>
+          <td><code>did:jwk</code></td>
+          <td>JSON Web Key encoded in the DID string. Compact and self-contained.</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td><code>did:peer</code></td>
+          <td>Private peer-to-peer identifiers. Not published to any registry.</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td><code>did:ion</code></td>
+          <td>Bitcoin Layer 2 (Sidetree). High throughput, anchored to Bitcoin.</td>
+          <td>Yes — Bitcoin</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-title">Veramo CLI</div>
+        <p>A framework for managing DIDs and Verifiable Credentials. Configured via <span class="mono">agent.yml</span>. Keys stored in <span class="mono">database.sqlite</span>.</p>
+        <div class="code-wrap">
+          <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> --version</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Universal Resolver</div>
+        <p>A hosted API that resolves DIDs across all major methods. No local setup needed. Configured in your <span class="mono">agent.yml</span>.</p>
+        <div class="code-wrap">
+          <div class="code-body" style="font-size:11.5px">GET https://dev.uniresolver.io/1.0/identifiers/<span class="vl">{did}</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ SETUP ══════════════ -->
+  <div class="tab-panel" id="tab-setup">
+
+    <div class="note note-blue">
+      Complete these steps once before the lab. If Veramo is already installed, skip to Step 3.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Prerequisites</div>
+      <table class="method-table">
+        <tr><th>Requirement</th><th>Version</th><th>Check</th></tr>
+        <tr>
+          <td>Node.js</td>
+          <td>v18 or later</td>
+          <td><span class="mono">node --version</span></td>
+        </tr>
+        <tr>
+          <td>npm</td>
+          <td>v8 or later</td>
+          <td><span class="mono">npm --version</span></td>
+        </tr>
+        <tr>
+          <td>Terminal</td>
+          <td>Any shell</td>
+          <td>macOS Terminal, Windows PowerShell, or Linux bash</td>
+        </tr>
+      </table>
+      <div class="note note-yellow" style="margin-top:12px">
+        If <span class="mono">node --version</span> returns an error, install Node.js from <a href="https://nodejs.org" target="_blank">nodejs.org</a> before continuing.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Installation &amp; Agent Setup</div>
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-body">
+            <div class="step-title">Install Veramo CLI globally</div>
+            <div class="step-desc">This installs the <span class="mono">veramo</span> command on your machine. The <span class="mono">-g</span> flag makes it available from any directory.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'npm i @veramo/cli -g')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> npm i @veramo/cli -g</div>
+            </div>
+            <div class="note note-blue">This may take 1–2 minutes. You will see npm download progress.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-body">
+            <div class="step-title">Verify installation</div>
+            <div class="step-desc">Confirm Veramo installed correctly. You should see a version number like <span class="mono">7.x.x</span>.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo --version')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> --version
+
+<span class="cm">Expected output:</span>
+<span class="vl">7.0.0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-body">
+            <div class="step-title">Create a project folder</div>
+            <div class="step-desc">All Veramo files — your config, database, and keys — will live in this folder.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'mkdir my-did-project\ncd my-did-project')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> mkdir my-did-project
+<span class="p">$</span> cd my-did-project</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">4</div>
+          <div class="step-body">
+            <div class="step-title">Generate the agent configuration</div>
+            <div class="step-desc">This creates your <span class="mono">agent.yml</span> file — the configuration for your local DID agent. It sets up the key manager, DID providers (including <span class="mono">did:ethr:sepolia</span>), and the SQLite database.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo config create')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> config create</div>
+            </div>
+            <div class="note note-green">
+              After this runs, you will have <span class="mono">agent.yml</span> and <span class="mono">database.sqlite</span> in your folder. Your agent is ready.
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">5</div>
+          <div class="step-body">
+            <div class="step-title">Confirm the config is valid</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo config check')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> config check</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">What was created?</div>
+      <table class="method-table">
+        <tr><th>File</th><th>Purpose</th></tr>
+        <tr>
+          <td><span class="mono">agent.yml</span></td>
+          <td>Your agent configuration. Defines DID methods, key management, database path, and REST server settings.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">database.sqlite</span></td>
+          <td>Local encrypted database storing your private keys, DIDs, and credentials. Keep this file safe — losing it means losing access to your DIDs.</td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ CREATE ══════════════ -->
+  <div class="tab-panel" id="tab-create">
+
+    <div class="note note-green">
+      Goal: Create at least two DIDs using different methods, then list and resolve them.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Prerequisites</div>
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-label">Check Veramo is working</span>
+          <button class="copy-btn" onclick="cp(this, 'veramo --version\nveramo config check')">Copy</button>
+        </div>
+        <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> --version
+<span class="p">$</span> <span class="kw">veramo</span> config check</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Create and Manage DIDs</div>
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-body">
+            <div class="step-title">Create a did:key DID</div>
+            <div class="step-desc">Instant creation — no blockchain, no network. The identifier is derived directly from the public key.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo did create --provider did:key')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:key</span></div>
+            </div>
+            <div class="note note-blue">Output: a new DID beginning with <span class="mono">did:key:z6Mk...</span></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-body">
+            <div class="step-title">Create a did:ethr:sepolia DID</div>
+            <div class="step-desc">Creates an Ethereum-based DID on the Sepolia testnet. The DID is derived from the Ethereum address.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo did create --provider did:ethr:sepolia')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:ethr:sepolia</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-body">
+            <div class="step-title">Create a did:jwk DID</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo did create --provider did:jwk')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:jwk</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">4</div>
+          <div class="step-body">
+            <div class="step-title">List all your DIDs</div>
+            <div class="step-desc">Shows every DID stored in your local Veramo database.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo did list')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> did list</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">5</div>
+          <div class="step-body">
+            <div class="step-title">Resolve a DID locally via Veramo</div>
+            <div class="step-desc">Replace the DID below with one you created above. Veramo fetches and displays the full DID Document.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal — replace with your DID</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo did resolve did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> did resolve <span class="vl">did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">What happened?</div>
+      <div class="cols-2">
+        <div>
+          <p>When <span class="mono">veramo did create</span> ran, Veramo:</p>
+          <ol style="margin-top:6px">
+            <li>Generated a new cryptographic key pair (Ed25519 or Secp256k1)</li>
+            <li>Stored the <strong>private key</strong> in <span class="mono">database.sqlite</span></li>
+            <li>Derived a unique DID from the public key</li>
+            <li>Constructed the DID Document</li>
+          </ol>
+        </div>
+        <div>
+          <div class="note note-yellow">
+            The <span class="mono">database.sqlite</span> file contains your private keys. Back it up and keep it secure. In production, keys are stored in an HSM or secure enclave — never in a plain file.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ RESOLVE ══════════════ -->
+  <div class="tab-panel" id="tab-resolve">
+
+    <div class="note note-blue">
+      Goal: Resolve any DID using the Universal Resolver to inspect its DID Document.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Live DID Resolver — dev.uniresolver.io</div>
+
+      <p style="margin-bottom:10px">Sample DIDs — click to load:</p>
+      <div class="sample-row">
+        <div class="sample-chip" onclick="setDID('did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY')">did:key:z6MkhaXgBZDvotDkL5...</div>
+        <div class="sample-chip" onclick="setDID('did:web:danubetech.com')">did:web:danubetech.com</div>
+        <div class="sample-chip" onclick="setDID('did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w')">did:ion:EiClkZMDxPKqC9c...</div>
+      </div>
+
+      <div class="resolver-row">
+        <input class="did-input" id="did-input" type="text"
+          placeholder="did:key:z6Mk...  or  did:ethr:...  or any DID"
+          value="did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY"
+          onkeydown="if(event.key==='Enter') resolve()" />
+        <button class="btn-primary" onclick="resolve()" id="resolve-btn">Resolve</button>
+        <button class="btn-ghost" onclick="clearResolve()">Clear</button>
+      </div>
+
+      <div id="resolve-status"></div>
+      <pre id="resolve-result"></pre>
+
+      <div id="did-breakdown">
+        <h4 style="margin-top:18px;margin-bottom:10px">DID Document — Parsed</h4>
+        <div class="breakdown-grid" id="breakdown-content"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Resolve via Terminal</div>
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-label">Veramo CLI</span>
+          <button class="copy-btn" onclick="cp(this, 'veramo did resolve did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY')">Copy</button>
+        </div>
+        <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> did resolve <span class="vl">did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY</span></div>
+      </div>
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-label">cURL — Universal Resolver API</span>
+          <button class="copy-btn" onclick="cp(this, 'curl -s https://dev.uniresolver.io/1.0/identifiers/did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY | python3 -m json.tool')">Copy</button>
+        </div>
+        <div class="code-body"><span class="p">$</span> curl -s \
+  https://dev.uniresolver.io/1.0/identifiers/<span class="vl">did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doY</span> \
+  | python3 -m json.tool</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Resolution Response Fields</div>
+      <table class="method-table">
+        <tr><th>Field</th><th>Location</th><th>Meaning</th></tr>
+        <tr><td><code>id</code></td><td>didDocument</td><td>The DID itself</td></tr>
+        <tr><td><code>verificationMethod</code></td><td>didDocument</td><td>Public key(s) associated with this DID</td></tr>
+        <tr><td><code>authentication</code></td><td>didDocument</td><td>Keys that can authenticate as this DID</td></tr>
+        <tr><td><code>assertionMethod</code></td><td>didDocument</td><td>Keys used to sign Verifiable Credentials</td></tr>
+        <tr><td><code>keyAgreement</code></td><td>didDocument</td><td>Keys used for encrypted communication</td></tr>
+        <tr><td><code>service</code></td><td>didDocument</td><td>Service endpoints (e.g. messaging)</td></tr>
+        <tr><td><code>contentType</code></td><td>didResolutionMetadata</td><td>Format returned</td></tr>
+        <tr><td><code>duration</code></td><td>didResolutionMetadata</td><td>Time taken to resolve (ms)</td></tr>
+        <tr><td><code>error</code></td><td>didResolutionMetadata</td><td>Error code if resolution failed</td></tr>
+        <tr><td><code>deactivated</code></td><td>didDocumentMetadata</td><td>Whether this DID has been revoked</td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ CREDENTIALS ══════════════ -->
+  <div class="tab-panel" id="tab-credential">
+
+    <div class="note note-green">
+      Goal: Issue a Verifiable Credential signed by your DID, then verify it.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Verifiable Credentials — Trust Triangle</div>
+      <table class="method-table">
+        <tr><th>Role</th><th>Who</th><th>Action</th></tr>
+        <tr>
+          <td><strong>Issuer</strong></td>
+          <td>University, employer, government</td>
+          <td>Creates and signs the credential using their DID's private key</td>
+        </tr>
+        <tr>
+          <td><strong>Holder</strong></td>
+          <td>Student, employee, citizen</td>
+          <td>Receives and stores the credential in a wallet</td>
+        </tr>
+        <tr>
+          <td><strong>Verifier</strong></td>
+          <td>Another employer, a website, a service</td>
+          <td>Resolves the issuer's DID, fetches the public key, checks the signature</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Issue and Verify a Credential</div>
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-body">
+            <div class="step-title">Create credential.json</div>
+            <div class="step-desc">Save this file in your working directory. Replace both DIDs with your own from the Create DID exercise.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">credential.json</span>
+                <button class="copy-btn" onclick="cp(this, `{\n  \"@context\": [\"https://www.w3.org/2018/credentials/v1\"],\n  \"type\": [\"VerifiableCredential\"],\n  \"issuer\": { \"id\": \"YOUR_ISSUER_DID\" },\n  \"issuanceDate\": \"2025-01-01T00:00:00Z\",\n  \"credentialSubject\": {\n    \"id\": \"YOUR_SUBJECT_DID\",\n    \"name\": \"Alice Smith\",\n    \"course\": \"Decentralised Identity 101\",\n    \"grade\": \"Pass\"\n  }\n}`)">Copy</button>
+              </div>
+              <div class="code-body" style="font-size:12px">{
+  <span class="jk">"@context"</span>: [<span class="js">"https://www.w3.org/2018/credentials/v1"</span>],
+  <span class="jk">"type"</span>: [<span class="js">"VerifiableCredential"</span>],
+  <span class="jk">"issuer"</span>: { <span class="jk">"id"</span>: <span class="js">"YOUR_ISSUER_DID"</span> },
+  <span class="jk">"issuanceDate"</span>: <span class="js">"2025-01-01T00:00:00Z"</span>,
+  <span class="jk">"credentialSubject"</span>: {
+    <span class="jk">"id"</span>: <span class="js">"YOUR_SUBJECT_DID"</span>,
+    <span class="jk">"name"</span>: <span class="js">"Alice Smith"</span>,
+    <span class="jk">"course"</span>: <span class="js">"Decentralised Identity 101"</span>,
+    <span class="jk">"grade"</span>: <span class="js">"Pass"</span>
+  }
+}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-body">
+            <div class="step-title">Issue the credential</div>
+            <div class="step-desc">Veramo signs the credential with the issuer DID's private key and outputs a JWT.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo credential create --json-arg credential.json')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> credential create <span class="fl">--json-arg</span> credential.json</div>
+            </div>
+            <div class="note note-blue">Output: a signed JWT beginning with <span class="mono">eyJhbGci...</span></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-body">
+            <div class="step-title">Verify the credential</div>
+            <div class="step-desc">Veramo resolves the issuer DID, retrieves the public key from the DID Document, and checks the cryptographic signature.</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal — replace &lt;jwt&gt; with your output</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo credential verify --jwt <jwt>')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> credential verify <span class="fl">--jwt</span> <span class="vl">&lt;jwt&gt;</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">4</div>
+          <div class="step-body">
+            <div class="step-title">List all stored credentials</div>
+            <div class="code-wrap">
+              <div class="code-header">
+                <span class="code-label">Terminal</span>
+                <button class="copy-btn" onclick="cp(this, 'veramo credential list')">Copy</button>
+              </div>
+              <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> credential list</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-n">5</div>
+          <div class="step-body">
+            <div class="step-title">Inspect the JWT at jwt.io</div>
+            <div class="step-desc">A JWT is three Base64-encoded sections separated by dots: <span class="mono">header.payload.signature</span>. Paste your credential JWT at <a href="https://jwt.io" target="_blank">jwt.io</a> to decode it.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ REFERENCE ══════════════ -->
+  <div class="tab-panel" id="tab-ref">
+
+    <div class="cols-2">
+      <div>
+        <div class="card">
+          <div class="card-title">DID Management</div>
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-label">All DID commands</span>
+              <button class="copy-btn" onclick="cp(this, 'veramo did create --provider did:key\nveramo did create --provider did:ethr:sepolia\nveramo did create --provider did:jwk\nveramo did create --provider did:peer\nveramo did list\nveramo did resolve <did>\nveramo did delete <did>')">Copy All</button>
+            </div>
+            <div class="code-body"><span class="cm"># Create</span>
+<span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:key</span>
+<span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:ethr:sepolia</span>
+<span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:jwk</span>
+<span class="p">$</span> <span class="kw">veramo</span> did create <span class="fl">--provider</span> <span class="vl">did:peer</span>
+
+<span class="cm"># List / Resolve / Delete</span>
+<span class="p">$</span> <span class="kw">veramo</span> did list
+<span class="p">$</span> <span class="kw">veramo</span> did resolve <span class="vl">&lt;did&gt;</span>
+<span class="p">$</span> <span class="kw">veramo</span> did delete <span class="vl">&lt;did&gt;</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Key Management</div>
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-label">Key commands</span>
+              <button class="copy-btn" onclick="cp(this, 'veramo key list\nveramo key create\nveramo config gen-key')">Copy</button>
+            </div>
+            <div class="code-body"><span class="p">$</span> <span class="kw">veramo</span> key list
+<span class="p">$</span> <span class="kw">veramo</span> key create
+<span class="p">$</span> <span class="kw">veramo</span> config gen-key</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Server</div>
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-label">Start Veramo REST server</span>
+              <button class="copy-btn" onclick="cp(this, 'veramo server')">Copy</button>
+            </div>
+            <div class="code-body"><span class="cm"># Starts REST API on port 3332</span>
+<span class="p">$</span> <span class="kw">veramo</span> server
+
+<span class="cm"># API docs at:</span>
+<span class="cm"># http://localhost:3332/api-docs</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Verifiable Credentials</div>
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-label">Credential commands</span>
+              <button class="copy-btn" onclick="cp(this, 'veramo credential create --json-arg credential.json\nveramo credential list\nveramo credential verify --jwt <jwt>\nveramo presentation create\nveramo presentation verify')">Copy All</button>
+            </div>
+            <div class="code-body"><span class="cm"># Issue</span>
+<span class="p">$</span> <span class="kw">veramo</span> credential create <span class="fl">--json-arg</span> credential.json
+
+<span class="cm"># List stored</span>
+<span class="p">$</span> <span class="kw">veramo</span> credential list
+
+<span class="cm"># Verify</span>
+<span class="p">$</span> <span class="kw">veramo</span> credential verify <span class="fl">--jwt</span> <span class="vl">&lt;jwt&gt;</span>
+
+<span class="cm"># Presentations</span>
+<span class="p">$</span> <span class="kw">veramo</span> presentation create
+<span class="p">$</span> <span class="kw">veramo</span> presentation verify</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Universal Resolver (cURL)</div>
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-label">Resolve via API</span>
+              <button class="copy-btn" onclick="cp(this, 'curl -s https://dev.uniresolver.io/1.0/identifiers/<did> | python3 -m json.tool')">Copy</button>
+            </div>
+            <div class="code-body"><span class="p">$</span> curl -s \
+  https://dev.uniresolver.io/1.0/identifiers/<span class="vl">&lt;did&gt;</span> \
+  | python3 -m json.tool</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">External Resources</div>
+          <ul style="list-style:none;padding:0">
+            <li style="padding:6px 0;border-bottom:1px solid var(--border2)"><a href="https://dev.uniresolver.io" target="_blank">dev.uniresolver.io</a> — Universal Resolver UI</li>
+            <li style="padding:6px 0;border-bottom:1px solid var(--border2)"><a href="https://veramo.io/docs" target="_blank">veramo.io/docs</a> — Veramo Documentation</li>
+            <li style="padding:6px 0;border-bottom:1px solid var(--border2)"><a href="https://www.w3.org/TR/did-core" target="_blank">w3.org/TR/did-core</a> — DID Core Specification</li>
+            <li style="padding:6px 0;border-bottom:1px solid var(--border2)"><a href="https://www.w3.org/TR/vc-data-model" target="_blank">w3.org/TR/vc-data-model</a> — VC Data Model</li>
+            <li style="padding:6px 0"><a href="https://jwt.io" target="_blank">jwt.io</a> — JWT Decoder</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /page -->
+
+<script>
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function cp(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const prev = btn.textContent;
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = prev; btn.classList.remove('done'); }, 1800);
+    });
+  }
+
+  function setDID(d) { document.getElementById('did-input').value = d; }
+
+  function clearResolve() {
+    document.getElementById('resolve-status').innerHTML = '';
+    document.getElementById('resolve-result').style.display = 'none';
+    document.getElementById('resolve-result').innerHTML = '';
+    document.getElementById('did-breakdown').style.display = 'none';
+  }
+
+  function hl(json) {
+    return json.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      m => {
+        if (/^"/.test(m)) return /:$/.test(m) ? `<span class="jk">${m}</span>` : `<span class="js">${m}</span>`;
+        if (/true|false/.test(m)) return `<span class="jb">${m}</span>`;
+        if (/null/.test(m)) return `<span class="jx">${m}</span>`;
+        return `<span class="jn">${m}</span>`;
+      }
+    );
+  }
+
+  function buildBreakdown(data) {
+    const doc = data.didDocument || data;
+    if (!doc || !doc.id) return;
+    const grid = document.getElementById('breakdown-content');
+    grid.innerHTML = '';
+    const add = (label, html) => {
+      const c = document.createElement('div');
+      c.className = 'bcard';
+      c.innerHTML = `<div class="bcard-label">${label}</div>${html}`;
+      grid.appendChild(c);
+    };
+
+    add('DID', `<div class="bcard-val">${doc.id}</div>`);
+
+    if (doc.verificationMethod?.length) {
+      const items = doc.verificationMethod.map(v =>
+        `<li><b>${v.type || 'Unknown'}</b>${v.id || ''}</li>`
+      ).join('');
+      add(`Verification Methods (${doc.verificationMethod.length})`, `<ul class="bcard-list">${items}</ul>`);
+    }
+
+    ['authentication','assertionMethod','keyAgreement','capabilityInvocation','capabilityDelegation'].forEach(r => {
+      if (doc[r]?.length) {
+        const items = doc[r].map(k => `<li>${typeof k === 'string' ? k : (k.id || JSON.stringify(k))}</li>`).join('');
+        add(r.replace(/([A-Z])/g,' $1').trim(), `<ul class="bcard-list">${items}</ul>`);
+      }
+    });
+
+    if (doc.service?.length) {
+      const items = doc.service.map(s => `<li><b>${s.type}</b>${s.serviceEndpoint || ''}</li>`).join('');
+      add(`Service (${doc.service.length})`, `<ul class="bcard-list">${items}</ul>`);
+    }
+
+    const meta = data.didResolutionMetadata || {};
+    const metaKeys = Object.keys(meta).filter(k => meta[k] !== null && meta[k] !== undefined);
+    if (metaKeys.length) {
+      const items = metaKeys.map(k => `<li><b>${k}</b>${String(meta[k])}</li>`).join('');
+      add('Resolution Metadata', `<ul class="bcard-list">${items}</ul>`);
+    }
+
+    document.getElementById('did-breakdown').style.display = 'block';
+  }
+
+  async function resolve() {
+    const did = document.getElementById('did-input').value.trim();
+    if (!did) return;
+    const statusEl = document.getElementById('resolve-status');
+    const resultEl = document.getElementById('resolve-result');
+    const btn = document.getElementById('resolve-btn');
+
+    statusEl.innerHTML = `<span class="status-line status-loading"><span class="spin"></span> Resolving…</span>`;
+    resultEl.style.display = 'none';
+    document.getElementById('did-breakdown').style.display = 'none';
+    btn.disabled = true;
+
+    const url = 'https://dev.uniresolver.io/1.0/identifiers/' + encodeURIComponent(did);
+
+    const attempt = async (fetchUrl) => {
+      const r = await fetch(fetchUrl, { headers: { Accept: 'application/json' } });
+      return r.json();
+    };
+
+    try {
+      let data;
+      try {
+        data = await attempt(url);
+      } catch {
+        data = await attempt('https://corsproxy.io/?' + encodeURIComponent(url));
+      }
+
+      const errCode = data.didResolutionMetadata?.error;
+      if (errCode) {
+        statusEl.innerHTML = `<span class="status-line status-err">Resolution failed: ${errCode}</span>`;
+      } else {
+        const ms = data.didResolutionMetadata?.duration ? ` — ${data.didResolutionMetadata.duration}ms` : '';
+        statusEl.innerHTML = `<span class="status-line status-ok">Resolved${ms}</span>`;
+        buildBreakdown(data);
+      }
+      resultEl.innerHTML = hl(JSON.stringify(data, null, 2));
+      resultEl.style.display = 'block';
+    } catch (e) {
+      statusEl.innerHTML = `<span class="status-line status-err">Network error — resolve from the CLI instead</span>`;
+      resultEl.textContent = `$ veramo did resolve ${did}\n\n# or via cURL:\n$ curl -s https://dev.uniresolver.io/1.0/identifiers/${did} | python3 -m json.tool`;
+      resultEl.style.display = 'block';
+    }
+
+    btn.disabled = false;
+  }
+</script>
+</body>
+</html>
